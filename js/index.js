@@ -4,11 +4,13 @@ import GlUtils from './utils/gl-utils.js'
 
 let rotation = 0.0
 
-
-Promise.all([
-  NetUtils.loadText('../glsl/vertex.vert'),
-  NetUtils.loadText('../glsl/fragment.frag'),
-]).then(main)
+const opts = {
+  speedX: 1,
+  speedY: 0.7,
+}
+const gui = new dat.GUI()
+gui.add(opts, 'speedX', -10, 10)
+gui.add(opts, 'speedY', -10, 10)
 
 
 function main(resources) {
@@ -108,8 +110,8 @@ function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
   const modelViewMatrix = mat4.create()
 
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0])
-  mat4.rotate(modelViewMatrix, modelViewMatrix, rotation, [0, 0, 1])
-  mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * .7, [0, 1, 0])
+  mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * opts.speedX, [0, 0, 1])
+  mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * opts.speedY, [0, 1, 0])
 
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices)
 
@@ -131,3 +133,8 @@ function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
 
   rotation += deltaTime
 }
+
+Promise.all([
+  NetUtils.loadText('../glsl/vertex.vert'),
+  NetUtils.loadText('../glsl/fragment.frag'),
+]).then(main)
