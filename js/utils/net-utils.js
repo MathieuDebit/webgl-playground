@@ -1,73 +1,43 @@
 const NetUtils = {
-  
-    /**
-     * Loads a json file
-     *
-     * @param url
-     * @returns {Promise}
-     */
-    loadJson( url, shouldTryFromCache ) {
-  
-      let cache = ( shouldTryFromCache ) ? '' : '?' + Math.random()
+    loadJson(url, shouldTryFromCache = false) {
+      const cache = (shouldTryFromCache) ? '' : `?${Math.random()}`
       url += cache
-  
-      url += extension
-  
+
       const headers = new Headers({ 'Content-Type': 'application/json' })
-      const request = new Request( url, { headers: headers } )
-  
+      const request = new Request(url, { headers: headers })
+
       return fetch(request)
-        .then( function(response) { return response.text() } )
-        .catch( function( error ) { console.error( error ) } )
-  
+        .then(response => response.text())
+        .catch(error => console.error('[NetUtils] Load Json error:', error))
     },
-  
-    /**
-     * Loads a text file
-     *
-     * @param url
-     * @returns {Promise}
-     */
-    loadText( url, shouldTryFromCache = false ) {
-  
-      let cache = ( shouldTryFromCache ) ? '' : '?' + Math.random()
+
+    loadText(url, shouldTryFromCache = false) {
+      const cache = (shouldTryFromCache) ? '' : `?${Math.random()}`
       url += cache
-  
+
       const headers = new Headers({ 'Content-Type': 'text/plain' })
-      const request = new Request( url, { headers: headers } )
-  
+      const request = new Request(url, { headers: headers })
+
       return fetch(request)
-        .then( function(response) { return response.text() } )
-        .catch( function( error ) { console.error( error ) } )
-  
+        .then(response => response.text())
+        .catch(error => console.error('[NetUtils] Load Text error:', error))
     },
-  
-    /**
-     * Loads an image
-     *
-     * @param url
-     * @returns {Promise}
-     */
-    loadImage( url ) {
-  
-      return new Promise( function( resolve, reject ){
-  
+
+    loadImage(url) {
+      return new Promise((resolve, reject) => {
         const image = new Image()
-  
-        image.onload = function() {
-          resolve( image )
-        };
-        image.onerror = function() {
-          console.error('[NetUtils] coundnt load image', url)
-          reject('[NetUtils] coudnt load image')
-        };
-  
+
+        image.onload = () => resolve(image)
+
+        image.onerror = () => {
+          console.error('[NetUtils] couldn\'t load image', url)
+          reject('[NetUtils] couldn\'t load image')
+        }
+
         image.src = url
-  
-      } )
-  
+
+      })
     }
-  
-  };
+  }
 
   export default NetUtils
