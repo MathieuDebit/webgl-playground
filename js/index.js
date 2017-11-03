@@ -5,10 +5,12 @@ import GlUtils from './utils/gl-utils.js'
 let rotation = 0.0
 
 const opts = {
-  speedX: 1,
-  speedY: 0.7,
+  fov: 45,
+  speedX: 0,
+  speedY: 0,
 }
 const gui = new dat.GUI()
+gui.add(opts, 'fov', 0, 180)
 gui.add(opts, 'speedX', -10, 10)
 gui.add(opts, 'speedY', -10, 10)
 
@@ -41,15 +43,18 @@ function main(resources) {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: gl.getAttribLocation(shaderProgram, 'aPosition'),
-      vertexColor: gl.getAttribLocation(shaderProgram, 'aColor')
+      vertexColor: gl.getAttribLocation(shaderProgram, 'aColor'),
+      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
     },
   }
 
   const buffers = initBuffers(gl)
+  const texture = GlUtils.loadTexture(gl, '../assets/images/tronche-de-cake.png')
 
   let then = 0
   function render(now) {
@@ -57,7 +62,7 @@ function main(resources) {
     const deltaTime = now - then
     then = now
 
-    drawScene(gl, programInfo, buffers, canvasInfo, deltaTime)
+    drawScene(gl, programInfo, buffers, texture, canvasInfo, deltaTime)
 
     requestAnimationFrame(render)
   }
@@ -84,14 +89,25 @@ function initBuffers(gl) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer)
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW)
 
+  const textureCoord = new Float32Array([
+    0.0,  1.0,
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+  ])
+  const textureCoordBuffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer)
+  gl.bufferData(gl.ARRAY_BUFFER, textureCoord, gl.STATIC_DRAW)
+
   return {
     vertices: verticesBuffer,
     indices: indicesBuffer,
+    textureCoord: textureCoordBuffer,
   }
 }
 
 
-function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
+function drawScene(gl, programInfo, buffers, texture, canvasInfo, deltaTime) {
   gl.viewport(0, 0, canvasInfo.width, canvasInfo.height)
   gl.clearColor(0.13, 0.13, 0.13, 1)
   gl.clearDepth(1.0)
@@ -99,7 +115,7 @@ function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
   gl.depthFunc(gl.LEQUAL)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-  const fieldOfView = 45 * Math.PI / 180
+  const fieldOfView = opts.fov * Math.PI / 180
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight
   const zNear = 0.1
   const zFar = 100.0
@@ -115,7 +131,7 @@ function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices)
 
-  const { vertexPosition, vertexColor } = programInfo.attribLocations
+  const { vertexPosition, vertexColor, textureCoord } = programInfo.attribLocations
 
   gl.enableVertexAttribArray(vertexPosition)
   gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 20, 0)
@@ -123,11 +139,19 @@ function drawScene(gl, programInfo, buffers, canvasInfo, deltaTime) {
   gl.enableVertexAttribArray(vertexColor)
   gl.vertexAttribPointer(vertexColor, 3, gl.FLOAT, false, 20, 8)
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord)
+  gl.enableVertexAttribArray(textureCoord)
+  gl.vertexAttribPointer(textureCoord, 2, gl.FLOAT, false, 0, 0)
+
   gl.useProgram(programInfo.program)
 
   const { uniformLocations } = programInfo
   gl.uniformMatrix4fv(uniformLocations.projectionMatrix, false, projectionMatrix)
   gl.uniformMatrix4fv(uniformLocations.modelViewMatrix, false, modelViewMatrix)
+
+  gl.activeTexture(gl.TEXTURE0)
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.uniform1i(programInfo.uniformLocations.uSampler, 0)
 
   gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0)
 
