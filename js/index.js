@@ -1,3 +1,4 @@
+import WebGL from './classes/WebGL.js'
 import NetUtils from './utils/net-utils.js'
 import GlUtils from './utils/gl-utils.js'
 
@@ -15,27 +16,14 @@ gui.add(opts, 'speedX', -10, 10)
 gui.add(opts, 'speedY', -10, 10)
 
 
-function main(resources) {
-  const canvas = document.querySelector('canvas')
-  const canvasInfo = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-  }
+Promise.all([
+  NetUtils.loadData('../glsl/vertex.glsl'),
+  NetUtils.loadData('../glsl/fragment.glsl'),
+]).then(main)
 
-  canvas.style.width = `${canvasInfo.width}px`
-  canvas.style.height = `${canvasInfo.height}px`
-  canvas.width = canvasInfo.width
-  canvas.height = canvasInfo.height
 
-  const gl = canvas.getContext('webgl')
-
-  if (!gl) {
-    console.error('Unable to initialize WebGL. Your browser or machine may not support it.')
-    return
-  }
-
-  const vertexSource = resources[0]
-  const fragmentSource = resources[1]
+function main([vertexSource, fragmentSource]) {
+  const { context: gl } = new WebGL()
 
   const shaderProgram = GlUtils.initShaderProgram(gl, vertexSource, fragmentSource)
 
@@ -62,7 +50,7 @@ function main(resources) {
     const deltaTime = now - then
     then = now
 
-    drawScene(gl, programInfo, buffers, texture, canvasInfo, deltaTime)
+    drawScene(gl, programInfo, buffers, texture, deltaTime)
 
     requestAnimationFrame(render)
   }
@@ -107,8 +95,8 @@ function initBuffers(gl) {
 }
 
 
-function drawScene(gl, programInfo, buffers, texture, canvasInfo, deltaTime) {
-  gl.viewport(0, 0, canvasInfo.width, canvasInfo.height)
+function drawScene(gl, programInfo, buffers, texture, deltaTime) {
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
   gl.clearColor(0.13, 0.13, 0.13, 1)
   gl.clearDepth(1.0)
   gl.enable(gl.DEPTH_TEST)
@@ -157,8 +145,3 @@ function drawScene(gl, programInfo, buffers, texture, canvasInfo, deltaTime) {
 
   rotation += deltaTime
 }
-
-Promise.all([
-  NetUtils.loadText('../glsl/vertex.vert'),
-  NetUtils.loadText('../glsl/fragment.frag'),
-]).then(main)
